@@ -276,10 +276,7 @@ def init_db():
     with app.app_context():
         db.create_all()
 
-def open_browser():
-    webbrowser.open('http://127.0.0.1:9000/')
 
 if __name__ == '__main__':
     init_db()
-    Timer(1, open_browser).start()
     app.run(debug=True, port=5000)
