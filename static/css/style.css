@@ -200,11 +200,11 @@ body {
     overflow: hidden;
     transition: all 0.3s ease;
     animation: fadeInUp 0.5s ease backwards;
+    background: rgba(79, 70, 229, 0.05);
 }
 
 .feature-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    background: rgba(79, 70, 229, 0.1);
 }
 
 .icon-circle {
