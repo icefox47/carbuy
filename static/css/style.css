@@ -409,9 +409,7 @@ footer a:hover {
     font-size: 1.25rem;
   }
 
-  .card {
-    margin: 0.5rem;
-  }
+  
 }
 
 @media (max-width: 576px) {
@@ -423,7 +421,10 @@ footer a:hover {
     font-size: 1.5rem;
   }
 
-  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
 }
 
 /* Success Animation */
