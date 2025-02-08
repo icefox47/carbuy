@@ -389,6 +389,43 @@ footer a:hover {
     }
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .hero-section {
+    min-height: 60vh;
+    padding: 2rem 0;
+  }
+
+  .feature-card {
+    margin-bottom: 1.5rem;
+  }
+
+  .icon-circle {
+    width: 60px;
+    height: 60px;
+  }
+
+  .navbar-brand {
+    font-size: 1.25rem;
+  }
+
+  .card {
+    margin: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  
+}
+
 /* Success Animation */
 @keyframes checkmark {
     0% {
