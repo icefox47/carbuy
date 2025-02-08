@@ -1,0 +1,409 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --gradient-start: #4f46e5;
+    --gradient-end: #6366f1;
+    --gradient-angle: 45deg;
+}
+
+@keyframes gradientAnimation {
+    0% {
+        --gradient-angle: 0deg;
+    }
+    100% {
+        --gradient-angle: 360deg;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8fafc;
+}
+
+/* Navbar Styles */
+.navbar {
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.navbar .nav-link {
+    position: relative;
+    padding: 0.5rem 1rem;
+    transition: color 0.3s ease;
+}
+
+.navbar .nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background: var(--gradient-start);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.navbar .nav-link:hover::after {
+    width: 100%;
+}
+
+/* Hero Section */
+.hero-section {
+    position: relative;
+    background: linear-gradient(
+        var(--gradient-angle),
+        rgba(79, 70, 229, 0.9),
+        rgba(99, 102, 241, 0.9)
+    );
+    background-size: 400% 400%;
+    animation: gradientAnimation 15s linear infinite;
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/static/img/hero-bg.jpg') center/cover;
+    z-index: -1;
+}
+
+.hero-content {
+    animation: fadeInUp 1s ease;
+}
+
+/* Search Card */
+.search-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(0);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeInUp 1s ease 0.3s backwards;
+}
+
+.search-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08);
+}
+
+.form-select, .form-control {
+    border-radius: 0.8rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 0.8rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    border: none;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, var(--gradient-end), var(--gradient-start));
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.btn-primary:hover::before {
+    opacity: 1;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+/* Feature Cards */
+.feature-card {
+    border: none;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.5s ease backwards;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.icon-circle {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(to right bottom, var(--gradient-start), var(--gradient-end));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover .icon-circle {
+    transform: scale(1.1);
+}
+
+.icon-circle i {
+    font-size: 2rem;
+    color: white;
+}
+
+/* Progress Steps */
+.progress-container {
+    margin: 2rem 0;
+}
+
+.progress {
+    height: 0.5rem !important;
+    background-color: #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    transition: width 0.5s ease;
+}
+
+.progress-steps {
+    position: relative;
+    margin-top: 1.5rem;
+}
+
+.progress-step {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .step-circle {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.progress-step.completed .step-circle {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+}
+
+/* Car Cards */
+ /* Card Styles */
+ .card {
+    border: none;
+    transition: all 0.3s ease;
+}
+.card:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+.car-card {
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+.car-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+.car-image {
+    height: 200px;
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+.car-card:hover .car-image {
+    transform: scale(1.05);
+}
+.features-badge {
+    font-size: 0.8rem;
+    margin: 0.2rem;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+.features-badge:hover {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+.car-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0d6efd;
+    transition: color 0.3s ease;
+}
+.car-specs {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.car-specs i {
+    width: 20px;
+    color: #0d6efd;
+}
+
+/* Footer styles */
+footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+footer a {
+    color: #fff;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: #007bff;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 4rem 0;
+        text-align: center;
+    }
+
+    .search-card {
+        margin-top: 2rem;
+    }
+
+    .navbar .nav-link.btn {
+        margin: 0.5rem 0;
+    }
+
+    .feature-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-steps {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .progress-step {
+        margin: 1rem 0;
+    }
+}
+
+/* Success Animation */
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.success-checkmark {
+    color: #4f46e5;
+    font-size: 5rem;
+    animation: checkmark 0.5s ease-in-out forwards;
+}
