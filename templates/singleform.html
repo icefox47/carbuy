@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Inquiry Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        /* Progress Bar Animation */
+        .progress {
+            height: 5px;
+            transition: width 0.4s ease;
+        }
+        .step-indicator {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-5">
+                        <!-- Progress Bar -->
+                        <div class="step-indicator text-center">
+                            Question <span id="currentStep">1</span> of <span id="totalSteps">12</span>
+                        </div>
+                        <div class="progress mb-4">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Form Steps -->
+                        <form id="contactForm" class="needs-validation" novalidate>
+                            <!-- Step 1: Car Make -->
+                            <div class="step-content" id="step1">
+                                <h2 class="text-primary mb-4">What's your preferred car makeo?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="make" name="make" required>
+                                            <option value="">Select Make</option>
+                                            <option value="Toyota">Toyota</option>
+                                            <option value="Honda">Honda</option>
+                                            <option value="Ford">Ford</option>
+                                            <option value="BMW">BMW</option>
+                                            <option value="Mercedes">Mercedes</option>
+                                            <option value="Audi">Audi</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a car make</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Vehicle Type -->
+                            <div class="step-content d-none" id="step2">
+                                <h2 class="text-primary mb-4">What type of vehicle are you looking for?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="type" name="type" required>
+                                            <option value="">Select Type</option>
+                                            <option value="sedan">Sedan</option>
+                                            <option value="suv">SUV</option>
+                                            <option value="truck">Truck</option>
+                                            <option value="coupe">Coupe</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a vehicle type</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(3)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Year -->
+                            <div class="step-content d-none" id="step3">
+                                <h2 class="text-primary mb-4">What's the year of the car?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="year" name="year" required>
+                                            <option value="">Select Year</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2023">2023</option>
+                                            <option value="2022">2022</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a year</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(4)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Condition -->
+                            <div class="step-content d-none" id="step4">
+                                <h2 class="text-primary mb-4">What's the condition of the car?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="condition" name="condition" required>
+                                            <option value="">Select Condition</option>
+                                            <option value="new">New</option>
+                                            <option value="used">Used</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select the condition</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(5)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 5: Kilometers Driven -->
+                            <div class="step-content d-none" id="step5">
+                                <h2 class="text-primary mb-4">How many kilometers has the car been driven?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="kms_driven" name="kms_driven" required>
+                                            <option value="">Select Kilometers Driven</option>
+                                            <option value="below_25000">Below 25000 km</option>
+                                            <option value="25000_50000">25000 km - 50000 km</option>
+                                            <option value="50000_75000">50000 km - 75000 km</option>
+                                            <option value="75000_100000">75000 km - 100000 km</option>
+                                            <option value="above_100000">100000 km and Above</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select kilometers driven</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(6)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 6: Budget Range -->
+                            <div class="step-content d-none" id="step6">
+                                <h2 class="text-primary mb-4">What's the budget range for the car?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="budget" name="budget" required>
+                                            <option value="">Select Budget Range</option>
+                                            <option value="below_1lac">Below 1 Lac</option>
+                                            <option value="1_2lac">1 Lac - 2 Lac</option>
+                                            <option value="2_3lac">2 Lac - 3 Lac</option>
+                                            <option value="3_5lac">3 Lac - 5 Lac</option>
+                                            <option value="above_5lac">5 Lac and Above</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select budget range</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(7)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 7: Fuel Type -->
+                            <div class="step-content d-none" id="step7">
+                                <h2 class="text-primary mb-4">What's the fuel type of the car?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="fuel" name="fuel" required>
+                                            <option value="">Select Fuel Type</option>
+                                            <option value="petrol">Petrol</option>
+                                            <option value="diesel">Diesel</option>
+                                            <option value="electric">Electric</option>
+                                            <option value="hybrid">Hybrid</option>
+                                            <option value="cng">CNG</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select fuel type</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(8)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 8: Transmission -->
+                            <div class="step-content d-none" id="step8">
+                                <h2 class="text-primary mb-4">What's the transmission type of the car?</h2>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <select class="form-select form-select-lg" id="transmission" name="transmission" required>
+                                            <option value="">Select Transmission</option>
+                                            <option value="manual">Manual</option>
+                                            <option value="automatic">Automatic</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select transmission type</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(9)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 9: Contact Information -->
+                            <div class="step-content d-none" id="step9">
+                                <h2 class="text-primary mb-4">Contact Information</h2>
+                                <div class="mb-4">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <div class="invalid-feedback">Please enter your name</div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(10)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 10: Phone Number -->
+                            <div class="step-content d-none" id="step10">
+                                <h2 class="text-primary mb-4">Phone Number</h2>
+                                <div class="mb-4">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                                    <div class="invalid-feedback">Please enter your phone number</div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="btn btn-primary" onclick="nextStep(11)">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 11: Success Message -->
+                            <div class="step-content d-none" id="step11">
+                                <div class="text-center mb-5">
+                                    <div class="success-checkmark mb-4">
+                                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                                    </div>
+                                    <h2 class="text-primary mb-3">Thank You!</h2>
+                                    <p class="text-muted mb-4">Based on your preferences, here are some cars you might like:</p>
+                                    <div class="d-flex justify-content-center gap-3 mb-5">
+                                        <a href="/" class="btn btn-outline-primary">
+                                            <i class="fas fa-home me-2"></i>Back to Home
+                                        </a>
+                                        <button onclick="window.location.reload()" class="btn btn-primary">
+                                            <i class="fas fa-search me-2"></i>New Search
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body p-5">
+                     <!-- Car Recommendations -->
+                     <div class="row g-4" id="carRecommendations">
+                        <!-- Car cards will be inserted here -->
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Fill form with URL parameters if they exist
+        window.onload = function() {
+            const fields = ['make', 'type', 'year', 'condition'];
+        
+            fields.forEach(field => {
+                const value = urlParams.get(field);
+                if (value) {
+                    const element = document.getElementById(field);
+                    if (element) {
+                        const options = Array.from(element.options);
+                        const matchingOption = options.find(option => 
+                            option.value.toLowerCase() === value.toLowerCase()
+                        );
+                        if (matchingOption) {
+                            element.value = matchingOption.value;
+                        }
+                    }
+                }
+            });
+        };
+
+        // Progress tracking
+        let currentStep = 1;
+        const totalSteps = 8;
+
+        function updateProgress() {
+            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            document.querySelector('.progress-bar').style.width = `${progress}%`;
+            document.getElementById('currentStep').innerText = currentStep;
+        }
+
+        function showStep(step) {
+            const currentStepElement = document.getElementById(`step${currentStep}`);
+            const nextStepElement = document.getElementById(`step${step}`);
+            
+            // Animation logic
+            currentStepElement.classList.add('fade-out');
+            setTimeout(() => {
+                currentStepElement.classList.add('d-none');
+                currentStepElement.classList.remove('fade-out');
+                nextStepElement.classList.remove('d-none');
+                nextStepElement.classList.add('fade-in');
+                
+                setTimeout(() => {
+                    nextStepElement.classList.remove('fade-in');
+                }, 300);
+                
+                currentStep = step;
+                updateProgress();
+            }, 300);
+        }
+
+        function nextStep(step) {
+            const currentStepElement = document.getElementById(`step${currentStep}`);
+            const inputs = currentStepElement.querySelectorAll('select, input');
+            let isValid = true;
+
+            inputs.forEach(input => {
+                if (input.required && !input.value) {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+
+            if (isValid) {
+                showStep(step);
+            }
+        }
+
+        function prevStep(step) {
+            showStep(step);
+        }
+
+        // Create car card HTML
+        function createCarCard(car) {
+            const priceFormatted = new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0,
+                minimumFractionDigits: 0
+            }).format(car.price);
+
+            return `
+                 <div class="col-md-6 col-lg-4">
+                    <div class="card car-card h-100">
+                        <img src="${car.image}" class="card-img-top car-image" alt="${car.make} ${car.model}">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">${car.make} ${car.model}</h5>
+                            <p class="car-price mb-3">${priceFormatted}</p>
+                            
+                            <div class="car-specs mb-3">
+                                <p class="mb-2"><i class="fas fa-calendar me-2"></i>${car.year} | ${car.condition}</p>
+                                <p class="mb-2"><i class="fas fa-road me-2"></i>${car.kms_driven.replace(/_/g, ' ').replace('below', '< ')}</p>
+                                <p class="mb-2"><i class="fas fa-gas-pump me-2"></i>${car.fuel} | ${car.transmission}</p>
+                            </div>
+
+                            <div class="features-section">
+                                <div class="d-flex flex-wrap gap-2">
+                                    ${car.features.slice(0, 3).map(feature => 
+                                        `<span class="badge features-badge">${feature}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        }
+
+        // Contact dealer function
+        function contactDealer(carId) {
+            alert('Thank you for your interest! A dealer will contact you shortly.');
+        }
+
+        // Form submission
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!this.checkValidity()) {
+                e.stopPropagation();
+                this.classList.add('was-validated');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                make: document.getElementById('make').value,
+                type: document.getElementById('type').value,
+                year: document.getElementById('year').value,
+                condition: document.getElementById('condition').value,
+                kms_driven: document.getElementById('kms_driven').value,
+                budget: document.getElementById('budget').value,
+                fuel: document.getElementById('fuel').value,
+                transmission: document.getElementById('transmission').value
+            };
+
+            try {
+                const response = await fetch('/api/submit-inquiry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Hide all steps
+                    document.querySelectorAll('.step-content').forEach(content => {
+                        content.classList.add('d-none');
+                    });
+                    
+                    // Show success message and recommendations
+                    const successDiv = document.getElementById('step11');
+                    successDiv.classList.remove('d-none');
+                    
+                    // Update progress bar to complete
+                    document.querySelector('.progress-bar').style.width = '100%';
+                    
+                    // Display recommendations
+                    const recommendationsContainer = document.getElementById('carRecommendations');
+                    if (result.recommendations && result.recommendations.length > 0) {
+                        recommendationsContainer.innerHTML = result.recommendations
+                            .map(car => createCarCard(car))
+                            .join('');
+                    } else {
+                        recommendationsContainer.innerHTML = `
+                            <div class="col-12 text-center">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No cars match your exact criteria. Please try adjusting your preferences.
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Smooth scroll to recommendations
+                    successDiv.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    throw new Error('Failed to submit inquiry');
+                }
+            } catch (error) {
+                alert('Error submitting form. Please try again.');
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

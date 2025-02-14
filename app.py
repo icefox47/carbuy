@@ -168,18 +168,22 @@ def submit_inquiry():
     try:
         data = request.get_json()
         
-        # Create new inquiry
+        # Handle skipped fields by providing defaults
+        year = data.get('year') or 'Not Specified'
+        kms_driven = data.get('kms_driven') or 'Not Specified'
+
+        # Create new inquiry with fallback values
         inquiry = CarInquiry(
             name=data['name'],
             phone=data['phone'],
-            make=data['make'],
-            type=data['type'],
-            year=data['year'],
-            condition=data['condition'],
-            kms_driven=data['kms_driven'],
-            fuel=data['fuel'],
-            transmission=data['transmission'],
-            budget=data['budget']
+            make=data.get('make', 'Not Specified'),
+            type=data.get('type', 'Not Specified'),
+            year=year,
+            condition=data.get('condition', 'Not Specified'),
+            kms_driven=kms_driven,
+            fuel=data.get('fuel', 'Not Specified'),
+            transmission=data.get('transmission', 'Not Specified'),
+            budget=data.get('budget', 'Not Specified')
         )
         
         # Save to database
