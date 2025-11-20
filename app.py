@@ -16,8 +16,8 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    # Use gemini-1.5-flash (current supported model)
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    # Use gemini-pro (stable model)
+    gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 else:
     gemini_model = None
     print("WARNING: GEMINI_API_KEY not found. Using mock LLM instead.")
@@ -296,6 +296,149 @@ def mock_llm_process(query):
     
     return result
 
+def generate_car_descriptions(query, cars, criteria):
+    """
+    Use Gemini AI to generate personalized descriptions for recommended cars.
+    Explains why each car matches the user's needs.
+    """
+    if not gemini_model or not cars:
+        return {}
+    
+    try:
+        car_list = "\n".join([
+            f"{i+1}. {car['year']} {car['make']} {car['model']} - AED {car['price']:,} ({car['condition']}, {car['fuel']}, {car['transmission']})"
+            for i, car in enumerate(cars)
+        ])
+        
+        prompt = f"""You are a helpful car sales assistant. A customer searched for: "{query}"
+
+We understood they want: {criteria}
+
+Here are the recommended cars:
+{car_list}
+
+For EACH car, write a brief (2-3 sentences) personalized explanation of why it matches their needs. Be specific about how it fits their criteria. Format as JSON:
+
+{{
+  "0": "explanation for first car",
+  "1": "explanation for second car",
+  ...
+}}
+
+Keep it friendly, helpful, and focused on matching their specific requirements."""
+
+        response = gemini_model.generate_content(prompt)
+        result_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if result_text.startswith('```'):
+            result_text = result_text.split('```')[1]
+            if result_text.startswith('json'):
+                result_text = result_text[4:]
+            result_text = result_text.strip()
+        
+        descriptions = json.loads(result_text)
+        return descriptions
+        
+    except Exception as e:
+        print(f"Error generating descriptions: {e}")
+        return {}
+
+def gemini_suggest_cars(query, criteria):
+    """
+    Use Gemini AI to intelligently suggest car models based on user query.
+    Leverages Gemini's real-world knowledge of the car market.
+    Handles misspellings and understands context naturally.
+    """
+    if not gemini_model:
+        print("Gemini model not available, skipping AI suggestions")
+        return []
+    
+    try:
+        # Build criteria summary
+        criteria_parts = []
+        if criteria.get('type'): criteria_parts.append(f"type: {criteria['type']}")
+        if criteria.get('make'): criteria_parts.append(f"make: {criteria['make']}")
+        if criteria.get('condition'): criteria_parts.append(f"condition: {criteria['condition']}")
+        if criteria.get('budget'): criteria_parts.append(f"budget: {criteria['budget']}")
+        if criteria.get('fuel'): criteria_parts.append(f"fuel: {criteria['fuel']}")
+        if criteria.get('transmission'): criteria_parts.append(f"transmission: {criteria['transmission']}")
+        
+        criteria_text = ", ".join(criteria_parts) if criteria_parts else "general preferences"
+        
+        prompt = f"""You are a car expert in the UAE/Middle East market. A customer is searching for a car.
+
+User's query: "{query}"
+Extracted criteria: {criteria_text}
+
+Based on this query, suggest 5-7 specific car models that would be perfect matches. Consider:
+- Popular models in UAE market
+- Price ranges (1 lac = 100,000 AED)
+- Family needs, business use, or other context from query
+- Fuel efficiency, safety, reliability
+- Handle any misspellings in the query naturally
+
+For each suggestion, provide ONLY the following fields in JSON format:
+- make: Car manufacturer (e.g., "Toyota", "Honda")
+- model: Car model name (e.g., "Fortuner", "Civic")
+- year: Year as string (e.g., "2024", "2023")
+- price: Price in AED as number (e.g., 180000)
+- condition: "new" or "used"
+- fuel: "petrol", "diesel", "electric", or "cng"
+- transmission: "automatic" or "manual"
+- reason: Brief explanation why it matches (1-2 sentences)
+
+Return ONLY a valid JSON array with NO additional text:
+[
+  {{
+    "make": "Toyota",
+    "model": "Fortuner",
+    "year": "2024",
+    "price": 180000,
+    "condition": "new",
+    "fuel": "diesel",
+    "transmission": "automatic",
+    "reason": "Perfect family SUV with excellent safety features and spacious interior"
+  }}
+]
+
+Focus on realistic, available cars in the UAE market. Return ONLY the JSON array."""
+
+        print(f"Calling Gemini for car suggestions...")
+        response = gemini_model.generate_content(prompt)
+        result_text = response.text.strip()
+        print(f"Gemini response received: {result_text[:200]}...")
+        
+        # Remove markdown code blocks if present
+        if result_text.startswith('```'):
+            result_text = result_text.split('```')[1]
+            if result_text.startswith('json'):
+                result_text = result_text[4:]
+            result_text = result_text.strip()
+        
+        suggestions = json.loads(result_text)
+        
+        # Add default images and features to each suggestion
+        for i, car in enumerate(suggestions):
+            # Add a generic car image (you can replace with real car images later)
+            car['image'] = f"https://images.unsplash.com/photo-1{550+i}?w=500&auto=format"
+            car['features'] = ['AI Recommended', 'Best Match', 'Popular Choice']
+            car['kms_driven'] = 'below_25000' if car.get('condition') == 'new' else '25000_50000'
+            car['id'] = i + 100  # Unique ID
+        
+        print(f"Successfully generated {len(suggestions)} AI suggestions")
+        return suggestions
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON parsing error in car suggestions: {e}")
+        print(f"Response text: {result_text if 'result_text' in locals() else 'N/A'}")
+        return []
+    except Exception as e:
+        print(f"Error generating car suggestions: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
 @app.route('/api/ai-search', methods=['POST'])
 def ai_search():
     try:
@@ -328,38 +471,44 @@ def ai_search():
         db.session.add(inquiry)
         db.session.commit()
         
-        # Get recommendations based on structured criteria
-        # Reuse the logic from submit_inquiry or create a shared helper
-        # For now, let's just do a simple filter here similar to submit_inquiry
+        # Use Gemini AI to intelligently suggest cars based on query
+        # This handles misspellings and uses real-world knowledge
+        ai_suggested_cars = gemini_suggest_cars(query, structured_criteria)
         
-        # ... (Recommendation logic similar to submit_inquiry but using structured_criteria)
-        # For brevity in this step, I will just return the structured criteria and let the frontend redirect or show results
-        # But the user asked to "generate results". So let's fetch them.
+        if ai_suggested_cars:
+            # Gemini provided intelligent suggestions
+            recommended_cars = ai_suggested_cars
+        else:
+            # Fallback to mock data matching if Gemini fails
+            recommended_cars = []
+            for car in SAMPLE_CARS:
+                score = 0
+                if structured_criteria['make'] and car['make'].lower() == structured_criteria['make'].lower():
+                    score += 3
+                if structured_criteria['type'] and car['type'].lower() == structured_criteria['type'].lower():
+                    score += 2
+                if structured_criteria['year'] and car['year'] == structured_criteria['year']:
+                    score += 1
+                if score > 0:
+                    recommended_cars.append(car)
+            if not recommended_cars:
+                recommended_cars = SAMPLE_CARS[:3]
         
-        recommended_cars = []
-        # Simple filter
-        for car in SAMPLE_CARS:
-            score = 0
-            if structured_criteria['make'] and car['make'].lower() == structured_criteria['make'].lower():
-                score += 3
-            if structured_criteria['type'] and car['type'].lower() == structured_criteria['type'].lower():
-                score += 2
-            if structured_criteria['year'] and car['year'] == structured_criteria['year']:
-                score += 1
-            
-            if score > 0:
-                recommended_cars.append(car)
-                
-        # If no matches, return some defaults
-        if not recommended_cars:
-            recommended_cars = SAMPLE_CARS[:3]
+        # Generate AI-powered personalized descriptions for each car
+        car_descriptions = generate_car_descriptions(query, recommended_cars, structured_criteria)
             
         return jsonify({
             'status': 'success',
             'message': 'Search processed successfully',
+            'user_info': {
+                'name': user_name,
+                'phone': user_phone,
+                'original_query': query
+            },
             'data': inquiry.to_dict(),
             'criteria': structured_criteria,
-            'recommendations': recommended_cars
+            'recommendations': recommended_cars,
+            'descriptions': car_descriptions  # AI-generated personalized descriptions
         })
 
     except Exception as e:

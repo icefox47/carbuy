@@ -44,6 +44,98 @@
             font-size: 2rem;
             color: white;
         }
+
+        /* Loader Overlay */
+        #loaderOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            /* Darker, more solid background */
+            backdrop-filter: blur(15px);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #loaderOverlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Loader Animation */
+        .loader-content {
+            text-align: center;
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .spinner-box {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        .circle-border {
+            width: 100%;
+            height: 100%;
+            padding: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background: linear-gradient(0deg, rgba(63, 249, 220, 0.1) 33%, #00d2ff 100%);
+            /* Brighter cyan/blue */
+            animation: spin 1s linear 0s infinite;
+        }
+
+        .circle-core {
+            width: 100%;
+            height: 100%;
+            background-color: #0f172a;
+            /* Matches overlay bg */
+            border-radius: 50%;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0);
+            }
+
+            to {
+                transform: rotate(359deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+            background: linear-gradient(to right, #fff, #00d2ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 210, 255, 0.3);
+        }
+
+        .loading-subtext {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 0.8rem;
+            font-weight: 400;
+        }
     </style>
 </head>
 
@@ -156,6 +248,19 @@
         </div>
     </div>
 
+    <!-- Loader Overlay -->
+    <div id="loaderOverlay">
+        <div class="loader-content">
+            <div class="spinner-box">
+                <div class="circle-border">
+                    <div class="circle-core"></div>
+                </div>
+            </div>
+            <h3 class="loading-text">Consulting AI Expert...</h3>
+            <p class="loading-subtext">Analyzing your preferences and market data</p>
+        </div>
+    </div>
+
     <script>
         function showUserForm() {
             const query = document.getElementById('aiQuery').value;
@@ -182,8 +287,9 @@
             const userModal = bootstrap.Modal.getInstance(userModalEl);
             userModal.hide();
 
-            // Show loading state (optional but good for UX)
-            // ...
+            // Show loading state
+            const loader = document.getElementById('loaderOverlay');
+            loader.classList.add('active');
 
             try {
                 const response = await fetch('/api/ai-search', {
@@ -208,6 +314,9 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while processing your request.');
+            } finally {
+                // Hide loading state
+                loader.classList.remove('active');
             }
         }
 
@@ -215,25 +324,43 @@
             const container = document.getElementById('resultsContainer');
             container.innerHTML = '';
 
-            // Show criteria with premium styling
+            // Show user info and search query
             const criteriaDiv = document.getElementById('aiCriteria');
-            if (data.criteria) {
+            if (data.user_info) {
                 criteriaDiv.style.display = 'block';
+
+                // Build criteria summary
                 const parts = [];
                 if (data.criteria.condition) parts.push(`<strong>${data.criteria.condition}</strong>`);
                 if (data.criteria.make) parts.push(`<strong>${data.criteria.make}</strong>`);
                 if (data.criteria.type) parts.push(`<strong>${data.criteria.type}</strong>`);
                 if (data.criteria.year) parts.push(`year <strong>${data.criteria.year}</strong>`);
+                if (data.criteria.fuel) parts.push(`<strong>${data.criteria.fuel}</strong> fuel`);
+                if (data.criteria.transmission) parts.push(`<strong>${data.criteria.transmission}</strong> transmission`);
                 if (data.criteria.budget) parts.push(`budget <strong>${data.criteria.budget}</strong>`);
 
+                const criteriaText = parts.length > 0 ? parts.join(', ') : 'any preferences';
+
                 criteriaDiv.innerHTML = `
-                    <i class="fas fa-brain me-2"></i>
-                    <strong>AI Understanding:</strong> We found ${parts.join(', ')} based on your request.
+                    <div class="mb-3">
+                        <h6 class="mb-2"><i class="fas fa-user-circle me-2"></i>Your Search</h6>
+                        <p class="mb-2"><strong>Name:</strong> ${data.user_info.name}</p>
+                        <p class="mb-2"><strong>Query:</strong> "${data.user_info.original_query}"</p>
+                        <p class="mb-0"><i class="fas fa-brain me-2"></i><strong>AI Understanding:</strong> We found ${criteriaText} based on your request.</p>
+                    </div>
                 `;
             }
 
             if (data.recommendations && data.recommendations.length > 0) {
                 data.recommendations.forEach((car, index) => {
+                    // Get AI-generated description for this car
+                    const aiDescription = data.descriptions && data.descriptions[index.toString()]
+                        ? `<div class="alert alert-light mt-3 mb-0">
+                             <i class="fas fa-lightbulb text-warning me-2"></i>
+                             <small><strong>Why this car?</strong> ${data.descriptions[index.toString()]}</small>
+                           </div>`
+                        : '';
+
                     const carCard = `
                         <div class="col-md-6 col-lg-4" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s backwards;">
                             <div class="card h-100">
@@ -251,15 +378,19 @@
                                         <span class="badge bg-light text-dark me-2 mb-2">
                                             <i class="fas fa-calendar me-1"></i>${car.year}
                                         </span>
+                                        <span class="badge bg-${car.condition === 'new' ? 'success' : 'info'} text-white me-2 mb-2">
+                                            ${car.condition.toUpperCase()}
+                                        </span>
                                     </div>
                                     ${car.features ? `
-                                        <div class="mt-3">
+                                        <div class="mb-2">
                                             <small class="text-muted d-block mb-2"><i class="fas fa-star me-1"></i>Features:</small>
                                             <div class="d-flex flex-wrap gap-1">
                                                 ${car.features.slice(0, 3).map(f => `<span class="badge bg-primary bg-opacity-10 text-primary">${f}</span>`).join('')}
                                             </div>
                                         </div>
                                     ` : ''}
+                                    ${aiDescription}
                                 </div>
                             </div>
                         </div>
