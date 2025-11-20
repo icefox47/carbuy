@@ -5,6 +5,22 @@ from datetime import datetime
 import os
 import webbrowser
 from threading import Timer
+from dotenv import load_dotenv
+import google.generativeai as genai
+import json
+
+# Load environment variables
+load_dotenv()
+
+# Configure Gemini AI
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # Use gemini-1.5-flash (current supported model)
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    gemini_model = None
+    print("WARNING: GEMINI_API_KEY not found. Using mock LLM instead.")
 
 app = Flask(__name__)
 CORS(app)
@@ -165,10 +181,68 @@ def car_form():
     
     return render_template('car-form.html', make=make, type=car_type, year=year)
 
+def gemini_llm_process(query):
+    """
+    Use Google Gemini AI to parse natural language query into structured data.
+    Falls back to mock implementation if API key is not configured.
+    """
+    if not gemini_model:
+        # Fallback to mock implementation
+        return mock_llm_process(query)
+    
+    try:
+        prompt = f"""You are a car search assistant. Extract car preferences from the user's query and return ONLY a JSON object with these fields:
+- make: car manufacturer (e.g., "Toyota", "Honda", "BMW") or null
+- type: body type (e.g., "suv", "sedan", "hatchback", "coupe", "truck", "van") or null
+- year: year as string (e.g., "2024", "2023") or null
+- budget: one of ["below_1lac", "1_2lac", "2_3lac", "3_5lac", "above_5lac"] or null (1 lac = 100,000 AED)
+- condition: "new" or "used" or null
+- fuel: fuel type ("petrol", "diesel", "electric", "cng") or null
+- transmission: "automatic" or "manual" or null
+
+User query: "{query}"
+
+Return ONLY valid JSON, no other text. If a field cannot be determined, use null.
+
+Example output:
+{{"make": "Toyota", "type": "suv", "year": null, "budget": "below_1lac", "condition": "used", "fuel": null, "transmission": null}}"""
+
+        response = gemini_model.generate_content(prompt)
+        result_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if result_text.startswith('```'):
+            result_text = result_text.split('```')[1]
+            if result_text.startswith('json'):
+                result_text = result_text[4:]
+            result_text = result_text.strip()
+        
+        # Parse JSON response
+        result = json.loads(result_text)
+        
+        # Ensure all expected fields exist
+        default_result = {
+            'make': None,
+            'type': None,
+            'year': None,
+            'budget': None,
+            'condition': None,
+            'fuel': None,
+            'transmission': None
+        }
+        default_result.update(result)
+        
+        return default_result
+        
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        # Fallback to mock implementation on error
+        return mock_llm_process(query)
+
 def mock_llm_process(query):
     """
     Mock LLM function to parse natural language query into structured data.
-    In a real application, this would call OpenAI/Gemini API.
+    Used as fallback when Gemini API is not available.
     """
     query = query.lower()
     result = {
@@ -233,8 +307,8 @@ def ai_search():
         if not query or not user_name or not user_phone:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
             
-        # Process query with Mock LLM
-        structured_criteria = mock_llm_process(query)
+        # Process query with Gemini AI (or fallback to mock)
+        structured_criteria = gemini_llm_process(query)
         
         # Create inquiry record
         inquiry = CarInquiry(
