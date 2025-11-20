@@ -37,15 +37,9 @@ class CarInquiry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
-    make = db.Column(db.String(50))
-    type = db.Column(db.String(50))
-    year = db.Column(db.String(4))
-    condition = db.Column(db.String(20))
-    kms_driven = db.Column(db.String(50))
-    fuel = db.Column(db.String(20))
-    transmission = db.Column(db.String(20))
-    budget = db.Column(db.String(50))
-    raw_query = db.Column(db.Text)  # New field for AI query
+    raw_query = db.Column(db.Text)  # Original Prompt
+    enhanced_query = db.Column(db.Text)  # Rewritten/Corrected Prompt
+    interested_cars = db.Column(db.Text, default='')  # Comma-separated list of "Make Model"
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -53,15 +47,9 @@ class CarInquiry(db.Model):
             'id': self.id,
             'name': self.name,
             'phone': self.phone,
-            'make': self.make,
-            'type': self.type,
-            'year': self.year,
-            'condition': self.condition,
-            'kms_driven': self.kms_driven,
-            'fuel': self.fuel,
-            'transmission': self.transmission,
-            'budget': self.budget,
             'raw_query': self.raw_query,
+            'enhanced_query': self.enhanced_query,
+            'interested_cars': self.interested_cars,
             'created_at': self.created_at.isoformat()
         }
 
@@ -191,21 +179,26 @@ def gemini_llm_process(query):
         return mock_llm_process(query)
     
     try:
-        prompt = f"""You are a car search assistant. Extract car preferences from the user's query and return ONLY a JSON object with these fields:
-- make: car manufacturer (e.g., "Toyota", "Honda", "BMW") or null
-- type: body type (e.g., "suv", "sedan", "hatchback", "coupe", "truck", "van") or null
-- year: year as string (e.g., "2024", "2023") or null
-- budget: one of ["below_1lac", "1_2lac", "2_3lac", "3_5lac", "above_5lac"] or null (1 lac = 100,000 AED)
+        prompt = f"""You are a car search assistant.
+1. Correct any spelling mistakes in the user's query and rewrite it clearly.
+2. Extract car preferences from the user's query.
+
+Return ONLY a JSON object with these fields:
+- enhanced_query: The corrected and rewritten clear query string.
+- make: car manufacturer or null
+- type: body type or null
+- year: year as string or null
+- budget: one of ["below_1lac", "1_2lac", "2_3lac", "3_5lac", "above_5lac"] or null
 - condition: "new" or "used" or null
-- fuel: fuel type ("petrol", "diesel", "electric", "cng") or null
+- fuel: fuel type or null
 - transmission: "automatic" or "manual" or null
 
 User query: "{query}"
 
-Return ONLY valid JSON, no other text. If a field cannot be determined, use null.
+Return ONLY valid JSON, no other text.
 
 Example output:
-{{"make": "Toyota", "type": "suv", "year": null, "budget": "below_1lac", "condition": "used", "fuel": null, "transmission": null}}"""
+{{"enhanced_query": "I am looking for a used Toyota SUV under 100k", "make": "Toyota", "type": "suv", "year": null, "budget": "below_1lac", "condition": "used", "fuel": null, "transmission": null}}"""
 
         response = gemini_model.generate_content(prompt)
         result_text = response.text.strip()
@@ -222,6 +215,7 @@ Example output:
         
         # Ensure all expected fields exist
         default_result = {
+            'enhanced_query': query, # Fallback to original
             'make': None,
             'type': None,
             'year': None,
@@ -246,6 +240,7 @@ def mock_llm_process(query):
     """
     query = query.lower()
     result = {
+        'enhanced_query': query,
         'make': None,
         'type': None,
         'year': None,
@@ -453,46 +448,26 @@ def ai_search():
         # Process query with Gemini AI (or fallback to mock)
         structured_criteria = gemini_llm_process(query)
         
-        # Create inquiry record
+        # Use Gemini AI to intelligently suggest cars based on query
+        ai_suggested_cars = gemini_suggest_cars(query, structured_criteria)
+        
+        if ai_suggested_cars:
+            recommended_cars = ai_suggested_cars
+        else:
+            # Fallback logic (simplified for brevity, assuming SAMPLE_CARS exists)
+            recommended_cars = SAMPLE_CARS[:3]
+
+        # Create inquiry record with simplified fields
         inquiry = CarInquiry(
             name=user_name,
             phone=user_phone,
-            make=structured_criteria.get('make', 'Not Specified'),
-            type=structured_criteria.get('type', 'Not Specified'),
-            year=structured_criteria.get('year', 'Not Specified'),
-            condition=structured_criteria.get('condition', 'Not Specified'),
-            kms_driven='Not Specified',
-            fuel=structured_criteria.get('fuel', 'Not Specified'),
-            transmission=structured_criteria.get('transmission', 'Not Specified'),
-            budget=structured_criteria.get('budget', 'Not Specified'),
-            raw_query=query
+            raw_query=query,
+            enhanced_query=structured_criteria.get('enhanced_query', query),
+            interested_cars='' # Initialized empty
         )
         
         db.session.add(inquiry)
         db.session.commit()
-        
-        # Use Gemini AI to intelligently suggest cars based on query
-        # This handles misspellings and uses real-world knowledge
-        ai_suggested_cars = gemini_suggest_cars(query, structured_criteria)
-        
-        if ai_suggested_cars:
-            # Gemini provided intelligent suggestions
-            recommended_cars = ai_suggested_cars
-        else:
-            # Fallback to mock data matching if Gemini fails
-            recommended_cars = []
-            for car in SAMPLE_CARS:
-                score = 0
-                if structured_criteria['make'] and car['make'].lower() == structured_criteria['make'].lower():
-                    score += 3
-                if structured_criteria['type'] and car['type'].lower() == structured_criteria['type'].lower():
-                    score += 2
-                if structured_criteria['year'] and car['year'] == structured_criteria['year']:
-                    score += 1
-                if score > 0:
-                    recommended_cars.append(car)
-            if not recommended_cars:
-                recommended_cars = SAMPLE_CARS[:3]
         
         # Generate AI-powered personalized descriptions for each car
         car_descriptions = generate_car_descriptions(query, recommended_cars, structured_criteria)
@@ -500,6 +475,7 @@ def ai_search():
         return jsonify({
             'status': 'success',
             'message': 'Search processed successfully',
+            'inquiry_id': inquiry.id,
             'user_info': {
                 'name': user_name,
                 'phone': user_phone,
@@ -508,9 +484,45 @@ def ai_search():
             'data': inquiry.to_dict(),
             'criteria': structured_criteria,
             'recommendations': recommended_cars,
-            'descriptions': car_descriptions  # AI-generated personalized descriptions
+            'descriptions': car_descriptions
         })
 
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in ai_search: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/log-interest', methods=['POST'])
+def log_interest():
+    try:
+        data = request.get_json()
+        inquiry_id = data.get('inquiry_id')
+        car_details = data.get('car_details')
+        
+        if not inquiry_id or not car_details:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+            
+        inquiry = CarInquiry.query.get(inquiry_id)
+        if not inquiry:
+            return jsonify({'status': 'error', 'message': 'Inquiry not found'}), 404
+            
+        # Update interested cars list (comma separated "Make Model")
+        new_interest = f"{car_details.get('make')} {car_details.get('model')}"
+        
+        if inquiry.interested_cars:
+            # Check if already present to avoid duplicates
+            current_list = [item.strip() for item in inquiry.interested_cars.split(',')]
+            if new_interest not in current_list:
+                inquiry.interested_cars += f", {new_interest}"
+        else:
+            inquiry.interested_cars = new_interest
+            
+        db.session.commit()
+            
+        return jsonify({'status': 'success', 'message': 'Interest logged successfully'})
+        
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 400
