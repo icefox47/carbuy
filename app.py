@@ -29,6 +29,7 @@ class CarInquiry(db.Model):
     fuel = db.Column(db.String(20))
     transmission = db.Column(db.String(20))
     budget = db.Column(db.String(50))
+    raw_query = db.Column(db.Text)  # New field for AI query
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -44,6 +45,7 @@ class CarInquiry(db.Model):
             'fuel': self.fuel,
             'transmission': self.transmission,
             'budget': self.budget,
+            'raw_query': self.raw_query,
             'created_at': self.created_at.isoformat()
         }
 
@@ -163,6 +165,133 @@ def car_form():
     
     return render_template('car-form.html', make=make, type=car_type, year=year)
 
+def mock_llm_process(query):
+    """
+    Mock LLM function to parse natural language query into structured data.
+    In a real application, this would call OpenAI/Gemini API.
+    """
+    query = query.lower()
+    result = {
+        'make': None,
+        'type': None,
+        'year': None,
+        'budget': None,
+        'condition': None,
+        'fuel': None,
+        'transmission': None
+    }
+    
+    # Simple keyword matching for demo purposes
+    makes = ['toyota', 'honda', 'maruti', 'bmw', 'hyundai', 'tata', 'ford']
+    types = ['suv', 'sedan', 'hatchback', 'coupe', 'truck', 'van']
+    conditions = ['new', 'used']
+    fuels = ['petrol', 'diesel', 'electric', 'cng']
+    
+    for make in makes:
+        if make in query:
+            result['make'] = make.capitalize()
+            break
+            
+    for car_type in types:
+        if car_type in query:
+            result['type'] = car_type
+            break
+            
+    for condition in conditions:
+        if condition in query:
+            result['condition'] = condition
+            break
+            
+    for fuel in fuels:
+        if fuel in query:
+            result['fuel'] = fuel
+            break
+            
+    # Extract year (simple 4 digit search)
+    import re
+    year_match = re.search(r'\b20\d{2}\b', query)
+    if year_match:
+        result['year'] = year_match.group()
+        
+    # Extract budget (very basic)
+    if '100k' in query or '1 lac' in query or '100000' in query:
+        result['budget'] = 'below_1lac'
+    elif '200k' in query or '2 lac' in query:
+        result['budget'] = '1_2lac'
+    # Add more budget logic as needed
+    
+    return result
+
+@app.route('/api/ai-search', methods=['POST'])
+def ai_search():
+    try:
+        data = request.get_json()
+        query = data.get('query')
+        user_name = data.get('name')
+        user_phone = data.get('phone')
+        
+        if not query or not user_name or not user_phone:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+            
+        # Process query with Mock LLM
+        structured_criteria = mock_llm_process(query)
+        
+        # Create inquiry record
+        inquiry = CarInquiry(
+            name=user_name,
+            phone=user_phone,
+            make=structured_criteria.get('make', 'Not Specified'),
+            type=structured_criteria.get('type', 'Not Specified'),
+            year=structured_criteria.get('year', 'Not Specified'),
+            condition=structured_criteria.get('condition', 'Not Specified'),
+            kms_driven='Not Specified',
+            fuel=structured_criteria.get('fuel', 'Not Specified'),
+            transmission=structured_criteria.get('transmission', 'Not Specified'),
+            budget=structured_criteria.get('budget', 'Not Specified'),
+            raw_query=query
+        )
+        
+        db.session.add(inquiry)
+        db.session.commit()
+        
+        # Get recommendations based on structured criteria
+        # Reuse the logic from submit_inquiry or create a shared helper
+        # For now, let's just do a simple filter here similar to submit_inquiry
+        
+        # ... (Recommendation logic similar to submit_inquiry but using structured_criteria)
+        # For brevity in this step, I will just return the structured criteria and let the frontend redirect or show results
+        # But the user asked to "generate results". So let's fetch them.
+        
+        recommended_cars = []
+        # Simple filter
+        for car in SAMPLE_CARS:
+            score = 0
+            if structured_criteria['make'] and car['make'].lower() == structured_criteria['make'].lower():
+                score += 3
+            if structured_criteria['type'] and car['type'].lower() == structured_criteria['type'].lower():
+                score += 2
+            if structured_criteria['year'] and car['year'] == structured_criteria['year']:
+                score += 1
+            
+            if score > 0:
+                recommended_cars.append(car)
+                
+        # If no matches, return some defaults
+        if not recommended_cars:
+            recommended_cars = SAMPLE_CARS[:3]
+            
+        return jsonify({
+            'status': 'success',
+            'message': 'Search processed successfully',
+            'data': inquiry.to_dict(),
+            'criteria': structured_criteria,
+            'recommendations': recommended_cars
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
 @app.route('/api/submit-inquiry', methods=['POST'])
 def submit_inquiry():
     try:
@@ -183,7 +312,8 @@ def submit_inquiry():
             kms_driven=kms_driven,
             fuel=data.get('fuel', 'Not Specified'),
             transmission=data.get('transmission', 'Not Specified'),
-            budget=data.get('budget', 'Not Specified')
+            budget=data.get('budget', 'Not Specified'),
+            raw_query=data.get('raw_query') # Support raw query if passed here too
         )
         
         # Save to database
