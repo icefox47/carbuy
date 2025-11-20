@@ -348,6 +348,15 @@
                         <p class="mb-2"><strong>Query:</strong> "${data.user_info.original_query}"</p>
                         <p class="mb-0"><i class="fas fa-brain me-2"></i><strong>AI Understanding:</strong> We found ${criteriaText} based on your request.</p>
                     </div>
+                    <div class="alert alert-success mt-3 border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-headset fa-2x me-3 text-success"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">We're on it!</h6>
+                                <p class="mb-0">Our expert agent has received your request and will contact you shortly with the best deals matching these preferences.</p>
+                            </div>
+                        </div>
+                    </div>
                 `;
             }
 
@@ -355,42 +364,71 @@
                 data.recommendations.forEach((car, index) => {
                     // Get AI-generated description for this car
                     const aiDescription = data.descriptions && data.descriptions[index.toString()]
-                        ? `<div class="alert alert-light mt-3 mb-0">
-                             <i class="fas fa-lightbulb text-warning me-2"></i>
-                             <small><strong>Why this car?</strong> ${data.descriptions[index.toString()]}</small>
+                        ? `<div class="mt-3 pt-3 border-top">
+                             <div class="d-flex">
+                                <i class="fas fa-quote-left text-primary opacity-25 me-2 fa-lg"></i>
+                                <p class="mb-0 fst-italic text-muted small">${data.descriptions[index.toString()]}</p>
+                             </div>
                            </div>`
                         : '';
 
                     const carCard = `
                         <div class="col-md-6 col-lg-4" style="animation: fadeInUp 0.5s ease-out ${index * 0.1}s backwards;">
-                            <div class="card h-100">
-                                <img src="${car.image}" class="card-img-top" alt="${car.make} ${car.model}">
-                                <div class="card-body">
-                                    <h5 class="card-title">${car.year} ${car.make} ${car.model}</h5>
-                                    <p class="card-text text-gradient fw-bold fs-4 mb-3">AED ${car.price.toLocaleString()}</p>
-                                    <div class="mb-3">
-                                        <span class="badge bg-light text-dark me-2 mb-2">
-                                            <i class="fas fa-gas-pump me-1"></i>${car.fuel}
-                                        </span>
-                                        <span class="badge bg-light text-dark me-2 mb-2">
-                                            <i class="fas fa-cog me-1"></i>${car.transmission}
-                                        </span>
-                                        <span class="badge bg-light text-dark me-2 mb-2">
-                                            <i class="fas fa-calendar me-1"></i>${car.year}
-                                        </span>
-                                        <span class="badge bg-${car.condition === 'new' ? 'success' : 'info'} text-white me-2 mb-2">
-                                            ${car.condition.toUpperCase()}
-                                        </span>
+                            <div class="card h-100 border-0 shadow-sm hover-lift">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2">${car.year}</span>
+                                            <h4 class="card-title fw-bold mb-1">${car.make} ${car.model}</h4>
+                                            <div class="text-muted small">${car.type ? car.type.toUpperCase() : 'CAR'}</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="text-gradient fw-bold fs-4">AED ${car.price.toLocaleString()}</div>
+                                            <small class="text-muted">Estimated Price</small>
+                                        </div>
                                     </div>
+                                    
+                                    <div class="row g-2 mb-4">
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <i class="fas fa-gas-pump text-primary me-2"></i>
+                                                <span class="small fw-semibold">${car.fuel}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <i class="fas fa-cog text-primary me-2"></i>
+                                                <span class="small fw-semibold">${car.transmission}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <i class="fas fa-tag text-primary me-2"></i>
+                                                <span class="small fw-semibold">${car.condition.toUpperCase()}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <i class="fas fa-tachometer-alt text-primary me-2"></i>
+                                                <span class="small fw-semibold">${car.kms_driven ? car.kms_driven.replace('_', '-') : 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     ${car.features ? `
-                                        <div class="mb-2">
-                                            <small class="text-muted d-block mb-2"><i class="fas fa-star me-1"></i>Features:</small>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                ${car.features.slice(0, 3).map(f => `<span class="badge bg-primary bg-opacity-10 text-primary">${f}</span>`).join('')}
+                                        <div class="mb-3">
+                                            <small class="text-uppercase text-muted fw-bold d-block mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Key Features</small>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                ${car.features.slice(0, 4).map(f => `<span class="badge bg-light text-dark border">${f}</span>`).join('')}
                                             </div>
                                         </div>
                                     ` : ''}
                                     ${aiDescription}
+                                </div>
+                                <div class="card-footer bg-white border-top-0 p-4 pt-0">
+                                    <button class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-phone me-2"></i>Request Details
+                                    </button>
                                 </div>
                             </div>
                         </div>
